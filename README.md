@@ -67,17 +67,27 @@ GitHub Pages で公開できる **index.html 単体**で動作します。
 
 ### 画像素材の差し替え
 
-現在はすべて Canvas で図形描画しています。  
-`assets/` フォルダに PNG を置くことで将来差し替えられる設計です。
+現在はすべて Canvas で図形描画しています（フォールバック）。  
+以下のパスに PNG ファイルを置くと自動的に優先表示されます。
 
 ```
 assets/
-  characters/mikaro.png
-  characters/pitokoro.png
-  ...
-  bg/start_bg.png
-  bg/play_bg.png
+  characters/
+    mikaro.png      ← MIKAROキャラ画像（透過PNG推奨、正面向き）
+    pitokoro.png
+    marine.png
+    fuwaro.png
+    muro.png
+    kakubake.png
+    takoron.png
+    zono.png
+  bg/
+    start_bg.png    ← スタート画面のキャラステージ背景
+    play_bg.png     ← プレイ画面の背景（地平線上の部屋）
 ```
+
+画像サイズの目安：キャラ画像は **128×128px** 以上の正方形（透過PNG）。  
+背景画像はゲーム画面幅 **390×400px** 程度。
 
 ### ファイル構成
 
