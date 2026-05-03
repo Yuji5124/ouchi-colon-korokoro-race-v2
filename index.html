@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ouchi Colon ころころレース</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    overflow: hidden;
+    touch-action: none;
+  }
+  #gameContainer {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    background: #f5c842;
+  }
+  @media (max-height: 844px) {
+    #gameContainer {
+      width: 100vw;
+      height: 100vh;
+    }
+  }
+  canvas { display: block; }
+
+  /* ===== SCREEN SYSTEM ===== */
+  .screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+  }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ===== START SCREEN ===== */
+  #startScreen {
+    background: linear-gradient(180deg, #ffe87a 0%, #ffd03a 60%, #e8b820 100%);
+  }
+  .bunting {
+    width: 100%; height: 36px;
+    background: repeating-linear-gradient(
+      90deg,
+      #e74c3c 0 36px, #e74c3c 36px,
+      #f39c12 36px 72px,
+      #2ecc71 72px 108px,
+      #3498db 108px 144px,
+      #9b59b6 144px 180px
+    );
+    clip-path: polygon(
+      0 0, 4% 100%, 8% 0, 12% 100%, 16% 0, 20% 100%, 24% 0, 28% 100%,
+      32% 0, 36% 100%, 40% 0, 44% 100%, 48% 0, 52% 100%, 56% 0, 60% 100%,
+      64% 0, 68% 100%, 72% 0, 76% 100%, 80% 0, 84% 100%, 88% 0, 92% 100%,
+      96% 0, 100% 100%, 100% 0
+    );
+    flex-shrink: 0;
+  }
+  .start-title-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0 0;
+    flex-shrink: 0;
+  }
+  .brand-badge {
+    background: white;
+    border-radius: 20px;
+    padding: 3px 16px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    margin-bottom: 4px;
+  }
+  .brand-badge::before, .brand-badge::after {
+    content: '✦';
+    color: #f39c12;
+    font-size: 10px;
+  }
+  .main-title {
+    font-size: 46px;
+    font-weight: 900;
+    color: #e74c3c;
+    text-shadow: 3px 3px 0 #fff, 5px 5px 0 #c0392b, -1px -1px 0 #fff;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    text-align: center;
+  }
+  .start-stage {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+  #startCanvas {
+    width: 100%;
+    height: 100%;
+  }
+  .start-bottom {
+    flex-shrink: 0;
+    padding: 8px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .start-btn {
+    background: linear-gradient(180deg, #ff8c00 0%, #e06000 100%);
+    border: 4px solid #fff;
+    border-radius: 40px;
+    box-shadow: 0 4px 0 #a04000, 0 6px 12px rgba(0,0,0,0.3);
+    color: white;
+    font-size: 32px;
+    font-weight: 900;
+    padding: 10px 0;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .start-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #a04000, 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .start-btn::before, .start-btn::after { content: '★'; font-size: 24px; }
+  .nav-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .nav-btn {
+    flex: 1;
+    background: linear-gradient(180deg, #4ecb6e 0%, #27ae60 100%);
+    border: 3px solid #fff;
+    border-radius: 16px;
+    box-shadow: 0 3px 0 #1a7a40, 0 4px 8px rgba(0,0,0,0.2);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-btn .nav-icon { font-size: 22px; }
+  .bottom-bar {
+    display: flex;
+    background: rgba(0,0,0,0.15);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .bottom-bar-btn {
+    flex: 1;
+    padding: 6px;
+    text-align: center;
+    color: rgba(255,255,255,0.9);
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-bar-btn .bb-icon { font-size: 18px; }
+
+  /* ===== CHARACTER SELECT ===== */
+  #charScreen {
+    background: linear-gradient(180deg, #ffe87a 0%, #ffd03a 60%, #e8b820 100%);
+  }
+  .char-header {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .char-header-title {
+    flex: 1;
+    background: #fff8;
+    border: 3px solid #f39c12;
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 16px;
+    font-weight: 900;
+    color: #333;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .char-header-title::before { content: '★'; color: #f39c12; }
+  .char-header-title::after  { content: '★'; color: #f39c12; }
+  .home-btn {
+    width: 36px; height: 36px;
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid #e8b820;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .char-main {
+    display: flex;
+    gap: 10px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    height: 190px;
+  }
+  .char-card {
+    flex: 0 0 150px;
+    background: linear-gradient(180deg, #fff9e6 0%, #ffe57a 100%);
+    border: 3px solid #f39c12;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  .selected-badge {
+    position: absolute;
+    top: -8px; left: 50%;
+    transform: translateX(-50%);
+    background: #f39c12;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  #selectedCharCanvas {
+    width: 120px;
+    height: 120px;
+  }
+  .char-name-label {
+    font-size: 15px;
+    font-weight: 900;
+    color: #333;
+    margin-top: 2px;
+  }
+  .char-stats {
+    flex: 1;
+    background: rgba(255,255,255,0.7);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .char-desc {
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 4px;
+    font-weight: bold;
+    line-height: 1.3;
+  }
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #444;
+    font-weight: bold;
+  }
+  .stat-icon { font-size: 14px; flex-shrink: 0; }
+  .stat-label { width: 52px; }
+  .stars { color: #f39c12; font-size: 12px; letter-spacing: 1px; }
+  .char-grid-area {
+    flex: 1;
+    padding: 6px 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    flex: 1;
+  }
+  .char-thumb {
+    background: linear-gradient(180deg, #fff 0%, #ffe0a0 100%);
+    border: 3px solid #e8b820;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 4px 2px 4px;
+    cursor: pointer;
+    position: relative;
+    aspect-ratio: 1;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s;
+    overflow: hidden;
+  }
+  .char-thumb.selected { border-color: #27ae60; background: linear-gradient(180deg, #e8ffe8 0%, #b0ffb0 100%); }
+  .char-thumb.locked { filter: grayscale(0.6); cursor: default; }
+  .char-thumb:not(.locked):active { transform: scale(0.95); }
+  .char-thumb canvas { width: 100%; aspect-ratio: 1; display: block; }
+  .char-thumb-name {
+    font-size: 9px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    line-height: 1.1;
+    width: 100%;
+  }
+  .char-thumb .check-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    background: #27ae60;
+    color: white;
+    border-radius: 50%;
+    width: 16px; height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  .char-thumb .lock-icon {
+    position: absolute;
+    top: 4px; right: 4px;
+    font-size: 14px;
+    opacity: 0.5;
+  }
+  .char-bottom {
+    flex-shrink: 0;
+    padding: 6px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dot-nav {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 2px 0;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .dot.active { background: #f39c12; }
+  .char-action-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .back-btn {
+    flex: 0 0 90px;
+    background: linear-gradient(180deg, #aaa 0%, #888 100%);
+    border: 3px solid #fff;
+    border-radius: 30px;
+    box-shadow: 0 3px 0 #555;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 10px 0;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .decide-btn {
+    flex: 1;
+    background: linear-gradient(180deg, #ff8c00 0%, #e06000 100%);
+    border: 3px solid #fff;
+    border-radius: 30px;
+    box-shadow: 0 3px 0 #a04000;
+    color: white;
+    font-size: 22px;
+    font-weight: 900;
+    padding: 10px 0;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s;
+  }
+  .decide-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a04000; }
+  .decide-btn::before { content: '🏁'; font-size: 18px; }
+  .setumei-btn {
+    flex: 0 0 60px;
+    background: linear-gradient(180deg, #f39c12 0%, #d68910 100%);
+    border: 3px solid #fff;
+    border-radius: 30px;
+    box-shadow: 0 3px 0 #8a5500;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .char-footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .char-footer-note::before { content: '★'; color: #f39c12; }
+
+  /* ===== PLAY SCREEN ===== */
+  #playScreen {
+    background: #000;
+  }
+  #playCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .play-ui {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .ui-lap {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.3;
+  }
+  .ui-stars {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,0.55);
+    color: #ffe44d;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ui-speed {
+    position: absolute;
+    bottom: 16px; right: 12px;
+    background: rgba(0,0,0,0.65);
+    color: white;
+    border-radius: 10px;
+    padding: 6px 12px;
+    text-align: right;
+    min-width: 110px;
+  }
+  .speed-num {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .speed-unit { font-size: 12px; color: #aaa; }
+  .speed-bar {
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    margin-top: 3px;
+    overflow: hidden;
+  }
+  .speed-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c);
+    transition: width 0.1s;
+  }
+  #minimap {
+    position: absolute;
+    bottom: 16px; left: 12px;
+    width: 70px; height: 70px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    overflow: hidden;
+  }
+  .play-touch-btns {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 110px;
+    display: flex;
+    pointer-events: all;
+  }
+  .touch-left, .touch-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 36px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .touch-left:active, .touch-right:active { background: rgba(255,255,255,0.08); }
+  .accel-btn {
+    flex: 0 0 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 28px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .accel-btn:active { background: rgba(255,255,0,0.1); }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="startScreen" class="screen active">
+    <div class="bunting"></div>
+    <div class="start-title-area">
+      <div class="brand-badge">Ouchi Colon</div>
+      <div class="main-title">ころころ<br>レース</div>
+    </div>
+    <div class="start-stage">
+      <canvas id="startCanvas"></canvas>
+    </div>
+    <div class="start-bottom">
+      <div class="start-btn" id="startBtn">スタート</div>
+      <div class="nav-btns">
+        <div class="nav-btn" id="navCharBtn">
+          <span class="nav-icon">🤖</span>キャラクター
+        </div>
+        <div class="nav-btn" style="background: linear-gradient(180deg,#5bc8f5 0%,#2980b9 100%); box-shadow: 0 3px 0 #1a5a8a;">
+          <span class="nav-icon">🏁</span>コース
+        </div>
+        <div class="nav-btn" style="background: linear-gradient(180deg,#c39bd3 0%,#8e44ad 100%); box-shadow: 0 3px 0 #6c2f87;">
+          <span class="nav-icon">⚙️</span>せってい
+        </div>
+      </div>
+      <div class="bottom-bar">
+        <div class="bottom-bar-btn"><span class="bb-icon">🏆</span>ランキング</div>
+        <div class="bottom-bar-btn"><span class="bb-icon">📣</span>おしらせ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CHARACTER SELECT ===== -->
+  <div id="charScreen" class="screen">
+    <div class="bunting"></div>
+    <div class="char-header">
+      <div class="char-header-title">キャラクターせんたく</div>
+      <div class="home-btn">🏠</div>
+    </div>
+    <div class="char-main">
+      <div class="char-card">
+        <div class="selected-badge">★ せんたくちゅう</div>
+        <canvas id="selectedCharCanvas" width="120" height="120"></canvas>
+        <div class="char-name-label" id="selectedName">MIKARO</div>
+      </div>
+      <div class="char-stats">
+        <div class="char-desc">バランスのいい<br>オールラウンダー！</div>
+        <div class="stat-row">
+          <span class="stat-icon">⚡</span>
+          <span class="stat-label">そくど</span>
+          <span class="stars" id="statSpeed">★★★★☆</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔄</span>
+          <span class="stat-label">ハンドリング</span>
+          <span class="stars" id="statHandle">★★★★☆</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">💪</span>
+          <span class="stat-label">おもさ</span>
+          <span class="stars" id="statWeight">★★★☆☆</span>
+        </div>
+      </div>
+    </div>
+    <div class="char-grid-area">
+      <div class="char-grid" id="charGrid"></div>
+    </div>
+    <div class="char-bottom">
+      <div class="dot-nav">
+        <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div class="char-action-btns">
+        <div class="back-btn" id="backBtn">← もどる</div>
+        <div class="decide-btn" id="decideBtn">けってい</div>
+        <div class="setumei-btn">★ せつめい</div>
+      </div>
+      <div class="char-footer-note">キャラクターによって とくいなコースがあるよ！</div>
+    </div>
+  </div>
+
+  <!-- ===== PLAY SCREEN ===== -->
+  <div id="playScreen" class="screen">
+    <canvas id="playCanvas"></canvas>
+    <div class="play-ui">
+      <div class="ui-lap">LAP<br><span style="font-size:18px">1</span>/3</div>
+      <div class="ui-stars">★ × <span id="starCount">05</span></div>
+      <div class="ui-speed">
+        <div class="speed-num" id="speedNum">000</div>
+        <div class="speed-unit">km/h</div>
+        <div class="speed-bar"><div class="speed-bar-fill" id="speedBar" style="width:0%"></div></div>
+      </div>
+      <canvas id="minimap" width="70" height="70"></canvas>
+      <div class="play-touch-btns">
+        <div class="touch-left" id="touchLeft">◀</div>
+        <div class="accel-btn" id="touchAccel">▲</div>
+        <div class="touch-right" id="touchRight">▶</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===========================
+// UTILITIES
+// ===========================
+const W = () => document.getElementById('gameContainer').offsetWidth;
+const H = () => document.getElementById('gameContainer').offsetHeight;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===========================
+// CHARACTER DATA
+// ===========================
+const CHARS = [
+  { id:'mikaro',   name:'MIKARO',    desc:'バランスのいい\nオールラウンダー！', speed:4, handle:4, weight:3, locked:false,
+    color:'#f5c842', bodyColor:'#222', eyeColor:'#fff', accentColor:'#4ecb6e' },
+  { id:'pitokoro', name:'ピトコロ',   desc:'すばやくて\nかるい！',           speed:5, handle:3, weight:2, locked:true,
+    color:'#e74c3c', bodyColor:'#222', eyeColor:'#fff', accentColor:'#e74c3c' },
+  { id:'marine',   name:'マリンカバ', desc:'パワーがある\nずっしりタイプ',     speed:2, handle:3, weight:5, locked:true,
+    color:'#5bc8f5', bodyColor:'#5bc8f5', eyeColor:'#fff', accentColor:'#2980b9' },
+  { id:'fuwaro',   name:'フワロ',     desc:'ふわふわ\nかるいタイプ',         speed:3, handle:5, weight:1, locked:true,
+    color:'#f8b4d9', bodyColor:'#f8b4d9', eyeColor:'#fff', accentColor:'#e91e8c' },
+  { id:'muro',     name:'ムーロ',     desc:'どっしりした\nスロータイプ',      speed:2, handle:2, weight:5, locked:true,
+    color:'#4ecb6e', bodyColor:'#333', eyeColor:'#fff', accentColor:'#4ecb6e' },
+  { id:'kakubake', name:'カクバケ',   desc:'かくかく\nへんなやつ',           speed:3, handle:3, weight:3, locked:true,
+    color:'#ccc', bodyColor:'#888', eyeColor:'#5bc8f5', accentColor:'#aaa' },
+  { id:'takoron',  name:'タコロン',   desc:'ぐるぐる\nまわるぞ！',           speed:4, handle:5, weight:2, locked:true,
+    color:'#e74c3c', bodyColor:'#c0392b', eyeColor:'#fff', accentColor:'#f39c12' },
+  { id:'zono',     name:'ゾノ',       desc:'むらさきの\nなぞのやつ',         speed:3, handle:3, weight:4, locked:true,
+    color:'#9b59b6', bodyColor:'#6c3483', eyeColor:'#fff', accentColor:'#d35400' },
+];
+
+let selectedChar = CHARS[0];
+
+// ===========================
+// DRAW CHARACTER (Canvas)
+// ===========================
+function drawChar(ctx, char, x, y, size) {
+  const s = size;
+  ctx.save();
+  ctx.translate(x, y);
+
+  // body (circle)
+  ctx.beginPath();
+  ctx.arc(0, -s*0.1, s*0.45, 0, Math.PI*2);
+  ctx.fillStyle = char.color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = s*0.04;
+  ctx.stroke();
+
+  // inner face area
+  ctx.beginPath();
+  ctx.arc(0, -s*0.12, s*0.3, 0, Math.PI*2);
+  ctx.fillStyle = char.bodyColor;
+  ctx.fill();
+
+  // eyes
+  [-1,1].forEach(side => {
+    ctx.beginPath();
+    ctx.arc(side*s*0.1, -s*0.15, s*0.07, 0, Math.PI*2);
+    ctx.fillStyle = char.eyeColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(side*s*0.1+side*s*0.01, -s*0.15, s*0.035, 0, Math.PI*2);
+    ctx.fillStyle = '#111';
+    ctx.fill();
+  });
+
+  // smile
+  ctx.beginPath();
+  ctx.arc(0, -s*0.05, s*0.1, 0.2, Math.PI-0.2);
+  ctx.strokeStyle = char.eyeColor;
+  ctx.lineWidth = s*0.035;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // wheels (bottom left/right)
+  [-1,1].forEach(side => {
+    ctx.beginPath();
+    ctx.ellipse(side*s*0.3, s*0.28, s*0.13, s*0.1, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#222';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(side*s*0.3, s*0.28, s*0.07, s*0.055, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#555';
+    ctx.fill();
+  });
+
+  // back wheel
+  ctx.beginPath();
+  ctx.ellipse(0, s*0.35, s*0.14, s*0.09, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+
+  // accent (mikaro rabbit ears)
+  if (char.id === 'mikaro') {
+    [-1,1].forEach(side => {
+      ctx.save();
+      ctx.translate(side*s*0.18, -s*0.52);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.07, s*0.14, side*0.3, 0, Math.PI*2);
+      ctx.fillStyle = char.color;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = s*0.03;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.035, s*0.08, side*0.3, 0, Math.PI*2);
+      ctx.fillStyle = '#ffc0cb';
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  // number on body
+  ctx.fillStyle = char.accentColor;
+  ctx.font = `bold ${s*0.18}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('8', 0, -s*0.08);
+
+  ctx.restore();
+}
+
+function drawCharBack(ctx, char, x, y, size) {
+  const s = size;
+  ctx.save();
+  ctx.translate(x, y);
+
+  // body
+  ctx.beginPath();
+  ctx.arc(0, -s*0.1, s*0.45, 0, Math.PI*2);
+  ctx.fillStyle = char.color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = s*0.04;
+  ctx.stroke();
+
+  // back head
+  ctx.beginPath();
+  ctx.arc(0, -s*0.12, s*0.3, 0, Math.PI*2);
+  ctx.fillStyle = char.bodyColor;
+  ctx.fill();
+
+  // number on back
+  ctx.fillStyle = char.accentColor;
+  ctx.font = `bold ${s*0.22}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('8', 0, -s*0.08);
+
+  // ears (mikaro)
+  if (char.id === 'mikaro') {
+    [-1,1].forEach(side => {
+      ctx.save();
+      ctx.translate(side*s*0.18, -s*0.52);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.07, s*0.14, side*0.3, 0, Math.PI*2);
+      ctx.fillStyle = char.color;
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  // wheels
+  [-1,1].forEach(side => {
+    ctx.beginPath();
+    ctx.ellipse(side*s*0.3, s*0.28, s*0.13, s*0.1, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#222';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(side*s*0.3, s*0.28, s*0.07, s*0.055, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#555';
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+// ===========================
+// START SCREEN CANVAS
+// ===========================
+function initStartCanvas() {
+  const canvas = document.getElementById('startCanvas');
+  const stage = canvas.parentElement;
+  canvas.width = stage.offsetWidth;
+  canvas.height = stage.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  drawStartScene(ctx, canvas.width, canvas.height);
+}
+
+function drawStartScene(ctx, w, h) {
+  // background - room
+  ctx.fillStyle = '#ffd966';
+  ctx.fillRect(0, 0, w, h);
+
+  // floor
+  const floorY = h * 0.55;
+  ctx.fillStyle = '#d4a044';
+  ctx.fillRect(0, floorY, w, h - floorY);
+
+  // wood floor planks
+  ctx.strokeStyle = '#b8882e';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, floorY + (h - floorY) / 6 * i);
+    ctx.lineTo(w, floorY + (h - floorY) / 6 * i);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(w / 5 * i, floorY);
+    ctx.lineTo(w / 5 * i, h);
+    ctx.stroke();
+  }
+
+  // wall decorations
+  // window left
+  ctx.fillStyle = '#87ceeb';
+  ctx.fillRect(w*0.04, h*0.05, w*0.2, h*0.25);
+  ctx.strokeStyle = '#a0784a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(w*0.04, h*0.05, w*0.2, h*0.25);
+  ctx.beginPath();
+  ctx.moveTo(w*0.14, h*0.05); ctx.lineTo(w*0.14, h*0.3);
+  ctx.moveTo(w*0.04, h*0.175); ctx.lineTo(w*0.24, h*0.175);
+  ctx.stroke();
+
+  // curtain left
+  ctx.fillStyle = '#ff7eb3';
+  ctx.beginPath();
+  ctx.moveTo(w*0.04, h*0.05);
+  ctx.bezierCurveTo(w*0.02, h*0.15, w*0.06, h*0.2, w*0.04, h*0.3);
+  ctx.lineTo(w*0.04, h*0.05);
+  ctx.fill();
+
+  // bookshelf right
+  ctx.fillStyle = '#8B6914';
+  ctx.fillRect(w*0.78, h*0.1, w*0.2, h*0.4);
+  ctx.fillStyle = '#6B4F0E';
+  ctx.fillRect(w*0.78, h*0.1, w*0.2, h*0.04);
+  // books
+  const bookColors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6'];
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = bookColors[i];
+    ctx.fillRect(w*0.79 + i*w*0.036, h*0.14, w*0.03, h*0.12);
+  }
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = bookColors[(i+2)%5];
+    ctx.fillRect(w*0.79 + i*w*0.036, h*0.28, w*0.03, h*0.1);
+  }
+
+  // teddy bear right
+  drawTeddyBear(ctx, w*0.88, h*0.52, h*0.12);
+
+  // plant left
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(w*0.03, h*0.48, w*0.06, h*0.1);
+  ctx.fillStyle = '#27ae60';
+  ctx.beginPath();
+  ctx.arc(w*0.06, h*0.42, w*0.07, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w*0.02, h*0.44, w*0.04, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w*0.1, h*0.44, w*0.04, 0, Math.PI*2);
+  ctx.fill();
+
+  // oval track on floor
+  ctx.save();
+  ctx.translate(w*0.5, h*0.72);
+  ctx.scale(1, 0.35);
+  ctx.beginPath();
+  ctx.arc(0, 0, w*0.38, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = w*0.1;
+  ctx.stroke();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 10]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // checkered flag
+  drawFlag(ctx, w*0.08, h*0.58, 28);
+
+  // cone right
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath();
+  ctx.moveTo(w*0.9, h*0.62);
+  ctx.lineTo(w*0.95, h*0.62);
+  ctx.lineTo(w*0.925, h*0.52);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(w*0.9, h*0.585, w*0.05, h*0.012);
+
+  // characters in scene
+  const positions = [
+    { x: w*0.5,  y: h*0.46, s: h*0.16, idx: 0 }, // MIKARO center big
+    { x: w*0.22, y: h*0.44, s: h*0.1,  idx: 1 }, // pitokoro left
+    { x: w*0.78, y: h*0.44, s: h*0.1,  idx: 2 }, // marine right
+    { x: w*0.15, y: h*0.54, s: h*0.09, idx: 3 }, // fuwaro far left
+    { x: w*0.85, y: h*0.54, s: h*0.09, idx: 6 }, // takoron far right
+    { x: w*0.3,  y: h*0.55, s: h*0.09, idx: 4 }, // muro
+    { x: w*0.7,  y: h*0.55, s: h*0.09, idx: 7 }, // zono
+  ];
+  positions.forEach(p => drawChar(ctx, CHARS[p.idx], p.x, p.y, p.s));
+}
+
+function drawTeddyBear(ctx, x, y, size) {
+  ctx.save();
+  ctx.translate(x, y);
+  const s = size;
+  ctx.fillStyle = '#c8a060';
+  // ears
+  [-1,1].forEach(side => {
+    ctx.beginPath(); ctx.arc(side*s*0.3, -s*0.6, s*0.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#e0b878'; ctx.beginPath(); ctx.arc(side*s*0.3, -s*0.6, s*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c8a060';
+  });
+  // head
+  ctx.beginPath(); ctx.arc(0, -s*0.4, s*0.35, 0, Math.PI*2); ctx.fill();
+  // body
+  ctx.beginPath(); ctx.ellipse(0, s*0.1, s*0.28, s*0.38, 0, 0, Math.PI*2); ctx.fill();
+  // face
+  ctx.fillStyle = '#e0b878';
+  ctx.beginPath(); ctx.ellipse(0, -s*0.35, s*0.2, s*0.15, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#222';
+  [-1,1].forEach(side => { ctx.beginPath(); ctx.arc(side*s*0.12, -s*0.44, s*0.04, 0, Math.PI*2); ctx.fill(); });
+  ctx.beginPath(); ctx.arc(0, -s*0.33, s*0.03, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawFlag(ctx, x, y, size) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#888';
+  ctx.fillRect(-1, -size*1.2, 2, size*1.2);
+  const sq = size / 4;
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? '#000' : '#fff';
+      ctx.fillRect(col * sq, -size*1.2 + row * sq, sq, sq);
+    }
+  }
+  ctx.restore();
+}
+
+// ===========================
+// CHAR SELECT SCREEN
+// ===========================
+function initCharScreen() {
+  // draw selected char
+  const canvas = document.getElementById('selectedCharCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 120, 120);
+  drawChar(ctx, selectedChar, 60, 80, 80);
+
+  // build grid
+  const grid = document.getElementById('charGrid');
+  grid.innerHTML = '';
+  CHARS.forEach(char => {
+    const cell = document.createElement('div');
+    cell.className = 'char-thumb' + (char.locked ? ' locked' : '') + (char === selectedChar ? ' selected' : '');
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 80; thumbCanvas.height = 80;
+    const tctx = thumbCanvas.getContext('2d');
+    drawChar(tctx, char, 40, 56, 52);
+    cell.appendChild(thumbCanvas);
+    const lbl = document.createElement('div');
+    lbl.className = 'char-thumb-name';
+    lbl.textContent = char.name;
+    cell.appendChild(lbl);
+    if (char === selectedChar) {
+      const badge = document.createElement('div');
+      badge.className = 'check-badge';
+      badge.textContent = '✓';
+      cell.appendChild(badge);
+    }
+    if (char.locked) {
+      const lock = document.createElement('div');
+      lock.className = 'lock-icon';
+      lock.textContent = '🔒';
+      cell.appendChild(lock);
+    } else {
+      cell.addEventListener('click', () => {
+        selectedChar = char;
+        updateCharStats();
+        initCharScreen();
+      });
+    }
+    grid.appendChild(cell);
+  });
+}
+
+function updateCharStats() {
+  document.getElementById('selectedName').textContent = selectedChar.name;
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+  document.getElementById('statSpeed').textContent  = stars(selectedChar.speed);
+  document.getElementById('statHandle').textContent = stars(selectedChar.handle);
+  document.getElementById('statWeight').textContent = stars(selectedChar.weight);
+}
+
+// ===========================
+// PLAY SCREEN / PSEUDO-3D
+// ===========================
+const game = {
+  running: false,
+  playerX: 0,    // -1 to 1, 0=center
+  speed: 0,
+  maxSpeed: 120,
+  accel: 0,
+  lap: 1,
+  stars: 5,
+  time: 0,
+  objects: [],   // { type, x, z, hit }
+  enemies: [],
+  frame: 0,
+  keys: {},
+  touchLeft: false,
+  touchRight: false,
+  touchAccel: false,
+  roadOffset: 0,
+};
+
+const ROAD_W_BASE = 0.6;   // road width at horizon (ratio of canvas w)
+const ROAD_W_NEAR = 1.1;   // road width at near edge
+const HORIZON_Y  = 0.38;   // horizon as ratio of canvas height
+const STRIPE_H   = 18;     // pixels per stripe
+
+function initPlay() {
+  const canvas = document.getElementById('playCanvas');
+  const container = document.getElementById('gameContainer');
+  canvas.width  = container.offsetWidth;
+  canvas.height = container.offsetHeight;
+
+  // Generate objects
+  game.objects = [];
+  for (let i = 0; i < 30; i++) {
+    game.objects.push({ type: Math.random() < 0.5 ? 'star' : 'block',
+      x: (Math.random() * 1.6 - 0.8), z: 0.05 + i * 0.032, hit: false });
+  }
+  game.enemies = [
+    { charIdx: 3, x: -0.25, z: 0.45 },
+    { charIdx: 4, x:  0.3,  z: 0.72 },
+  ];
+  game.speed = 40;
+  game.playerX = 0;
+  game.running = true;
+  game.frame = 0;
+  game.roadOffset = 0;
+}
+
+function playLoop(ts) {
+  if (!game.running) return;
+  requestAnimationFrame(playLoop);
+  game.frame++;
+
+  // input
+  const left  = game.keys['ArrowLeft']  || game.touchLeft;
+  const right = game.keys['ArrowRight'] || game.touchRight;
+  const accel = game.keys['ArrowUp']    || game.touchAccel;
+  const brake = game.keys['ArrowDown'];
+
+  if (accel) game.speed = Math.min(game.speed + 1.2, game.maxSpeed);
+  else if (brake) game.speed = Math.max(game.speed - 1.5, 0);
+  else game.speed = Math.max(game.speed - 0.4, 0);
+
+  if (left)  game.playerX = Math.max(game.playerX - 0.025, -0.85);
+  if (right) game.playerX = Math.min(game.playerX + 0.025,  0.85);
+
+  // road scroll
+  game.roadOffset += game.speed * 0.003;
+  if (game.roadOffset > 1) game.roadOffset -= 1;
+
+  // advance objects
+  const moveZ = game.speed * 0.0003;
+  game.objects.forEach(o => {
+    o.z -= moveZ;
+    if (o.z < 0.01) o.z += 1;
+  });
+  game.enemies.forEach(e => {
+    e.z -= moveZ * 0.7;
+    if (e.z < 0.04) e.z += 1;
+  });
+
+  // draw
+  drawPlayFrame();
+  updatePlayUI();
+}
+
+function drawPlayFrame() {
+  const canvas = document.getElementById('playCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const horizonY = H * HORIZON_Y;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // --- SKY / ROOM BACKGROUND ---
+  ctx.fillStyle = '#f0e8c8';
+  ctx.fillRect(0, 0, W, horizonY);
+
+  drawRoomBackground(ctx, W, H, horizonY);
+
+  // --- ROAD ---
+  const stripeCount = Math.ceil((H - horizonY) / STRIPE_H) + 2;
+  for (let i = 0; i < stripeCount; i++) {
+    const t = (i + game.roadOffset) / stripeCount; // 0..1
+    const y1 = horizonY + (H - horizonY) * (i / stripeCount);
+    const y2 = horizonY + (H - horizonY) * ((i + 1) / stripeCount);
+
+    // perspective width
+    const wNear  = W * ROAD_W_NEAR;
+    const wFar   = W * ROAD_W_BASE;
+    const lw1 = wFar  + (wNear - wFar) * (i / stripeCount);
+    const lw2 = wFar  + (wNear - wFar) * ((i + 1) / stripeCount);
+    const lx1 = (W - lw1) / 2, lx2 = (W - lw2) / 2;
+
+    // alternate road color
+    const even = Math.floor(i + game.roadOffset * stripeCount) % 2 === 0;
+
+    // road fill
+    ctx.fillStyle = even ? '#c8a050' : '#b8903a';
+    ctx.beginPath();
+    ctx.moveTo(lx1, y1); ctx.lineTo(lx1 + lw1, y1);
+    ctx.lineTo(lx2 + lw2, y2); ctx.lineTo(lx2, y2);
+    ctx.fill();
+
+    // kerbs (red/white stripes on edges)
+    const kw = lw1 * 0.06;
+    ctx.fillStyle = even ? '#e74c3c' : '#fff';
+    ctx.beginPath(); ctx.moveTo(lx1, y1); ctx.lineTo(lx1 + kw, y1); ctx.lineTo(lx2 + kw*lw2/lw1, y2); ctx.lineTo(lx2, y2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(lx1+lw1-kw, y1); ctx.lineTo(lx1+lw1, y1); ctx.lineTo(lx2+lw2, y2); ctx.lineTo(lx2+lw2-kw*lw2/lw1, y2); ctx.fill();
+
+    // center dashed line
+    if (even) {
+      ctx.fillStyle = '#fff';
+      const cx1 = W/2 - lw1*0.015, cx2 = W/2 - lw2*0.015;
+      const dw1 = lw1*0.03, dw2 = lw2*0.03;
+      ctx.beginPath();
+      ctx.moveTo(cx1, y1); ctx.lineTo(cx1+dw1, y1);
+      ctx.lineTo(cx2+dw2, y2); ctx.lineTo(cx2, y2);
+      ctx.fill();
+    }
+  }
+
+  // floor beyond road
+  ctx.fillStyle = '#c8a050';
+  const floorLX = (W - W * ROAD_W_NEAR) / 2;
+  ctx.fillStyle = '#d4a044';
+  ctx.fillRect(0, horizonY, floorLX, H - horizonY);
+  ctx.fillRect(floorLX + W * ROAD_W_NEAR, horizonY, W, H - horizonY);
+
+  // --- OBJECTS (stars & blocks) ---
+  game.objects.forEach(o => {
+    if (o.hit) return;
+    const { sx, sy, scale } = projectObject(o.x, o.z, W, H, horizonY);
+    if (sy < horizonY || sy > H - H*0.13) return;
+    if (o.type === 'star') drawStar3D(ctx, sx, sy, 18 * scale);
+    else drawBlock3D(ctx, sx, sy, 28 * scale, 28 * scale);
+  });
+
+  // --- ENEMIES ---
+  game.enemies.forEach(e => {
+    const { sx, sy, scale } = projectObject(e.x, e.z, W, H, horizonY);
+    if (sy < horizonY || sy > H - H*0.13) return;
+    const s = 70 * scale;
+    drawChar(ctx, CHARS[e.charIdx], sx, sy, s);
+  });
+
+  // --- PLAYER (MIKARO back view) ---
+  const px = W / 2 + game.playerX * W * 0.35;
+  const py = H * 0.80;
+  drawCharBack(ctx, selectedChar, px, py, H * 0.19);
+}
+
+function projectObject(objX, objZ, W, H, horizonY) {
+  // objZ: 0=near player, 1=horizon
+  const t = Math.pow(objZ, 0.7); // perspective curve
+  const sy = horizonY + (H - horizonY) * (1 - t);
+  const roadW = W * ROAD_W_BASE + (W * ROAD_W_NEAR - W * ROAD_W_BASE) * (1 - t);
+  const sx = W / 2 + objX * roadW / 2;
+  const scale = Math.max(0.05, 1 - t);
+  return { sx, sy, scale };
+}
+
+function drawStar3D(ctx, x, y, r) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#ffe44d';
+  ctx.strokeStyle = '#e6ac00';
+  ctx.lineWidth = r * 0.1;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i * Math.PI / 5) - Math.PI / 2;
+    const d = i % 2 === 0 ? r : r * 0.4;
+    i === 0 ? ctx.moveTo(Math.cos(a)*d, Math.sin(a)*d) : ctx.lineTo(Math.cos(a)*d, Math.sin(a)*d);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBlock3D(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y - h/2);
+  // top
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(-w/2, -h*0.15, w, h*0.15);
+  // front face
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(-w/2, 0, w, h);
+  // star on front
+  ctx.save();
+  ctx.translate(0, h*0.5);
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.max(8, h*0.45)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('★', 0, 0);
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawRoomBackground(ctx, W, H, horizonY) {
+  // wall color
+  ctx.fillStyle = '#f5e8a0';
+  ctx.fillRect(0, 0, W, horizonY);
+
+  // banner top
+  const bY = horizonY * 0.05;
+  ['#e74c3c','#f39c12','#2ecc71','#3498db','#9b59b6'].forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(W / 5 * i, bY, W / 5, horizonY * 0.06);
+  });
+
+  // window center
+  const winW = W * 0.28, winH = horizonY * 0.45;
+  const winX = (W - winW) / 2, winY = horizonY * 0.1;
+  ctx.fillStyle = '#87ceeb';
+  ctx.fillRect(winX, winY, winW, winH);
+  ctx.strokeStyle = '#a0784a'; ctx.lineWidth = 3;
+  ctx.strokeRect(winX, winY, winW, winH);
+  ctx.beginPath();
+  ctx.moveTo(winX + winW/2, winY); ctx.lineTo(winX + winW/2, winY + winH);
+  ctx.moveTo(winX, winY + winH/2); ctx.lineTo(winX + winW, winY + winH/2);
+  ctx.stroke();
+  // curtains
+  ctx.fillStyle = '#ff7eb3';
+  ctx.beginPath(); ctx.moveTo(winX-8, winY); ctx.bezierCurveTo(winX+8, winY+winH*0.3, winX, winY+winH*0.7, winX-6, winY+winH); ctx.lineTo(winX-14, winY+winH); ctx.lineTo(winX-14, winY); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(winX+winW+8, winY); ctx.bezierCurveTo(winX+winW-8, winY+winH*0.3, winX+winW, winY+winH*0.7, winX+winW+6, winY+winH); ctx.lineTo(winX+winW+14, winY+winH); ctx.lineTo(winX+winW+14, winY); ctx.fill();
+
+  // sofa
+  const sofaY = horizonY * 0.52;
+  ctx.fillStyle = '#27ae60';
+  ctx.beginPath(); ctx.roundRect(W*0.28, sofaY, W*0.44, horizonY*0.3, 8); ctx.fill();
+  ctx.fillStyle = '#1e8449';
+  ctx.beginPath(); ctx.roundRect(W*0.28, sofaY, W*0.44, horizonY*0.1, [8,8,0,0]); ctx.fill();
+  [0.32, 0.49].forEach(nx => {
+    ctx.fillStyle = '#f39c12';
+    ctx.beginPath(); ctx.roundRect(W*nx, sofaY+horizonY*0.06, W*0.12, W*0.12, 4); ctx.fill();
+    ctx.fillStyle = '#3498db';
+    ctx.beginPath(); ctx.roundRect(W*(nx+0.02), sofaY+horizonY*0.07, W*0.08, W*0.08, 4); ctx.fill();
+  });
+  // sofa feet
+  [0.31, 0.67].forEach(nx => {
+    ctx.fillStyle = '#8B6914';
+    ctx.fillRect(W*nx, sofaY+horizonY*0.28, W*0.015, horizonY*0.1);
+  });
+
+  // pictures on wall
+  [[0.18, 0.22], [0.68, 0.22]].forEach(([nx, ny]) => {
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#8B6914'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(W*nx, horizonY*ny, W*0.12, horizonY*0.2, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#87ceeb';
+    ctx.fillRect(W*nx+4, horizonY*ny+4, W*0.12-8, horizonY*0.2-8);
+  });
+
+  // plant left
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(W*0.04, horizonY*0.55, W*0.04, horizonY*0.35);
+  ctx.fillStyle = '#27ae60';
+  [[0.06,0.45],[0.02,0.5],[0.1,0.5]].forEach(([nx,ny]) => {
+    ctx.beginPath(); ctx.arc(W*nx, horizonY*ny, W*0.05, 0, Math.PI*2); ctx.fill();
+  });
+
+  // bookshelf right
+  ctx.fillStyle = '#8B6914';
+  ctx.fillRect(W*0.8, horizonY*0.08, W*0.18, horizonY*0.82);
+  ['#e74c3c','#3498db','#2ecc71','#f39c12'].forEach((c,i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(W*0.815 + i*W*0.038, horizonY*0.12, W*0.032, horizonY*0.2);
+  });
+
+  // dog left ground
+  const dogX = W*0.1, dogY = horizonY * 0.85;
+  ctx.fillStyle = '#c8a060';
+  ctx.beginPath(); ctx.ellipse(dogX, dogY, W*0.06, horizonY*0.1, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(dogX+W*0.04, dogY-horizonY*0.06, W*0.04, 0, Math.PI*2); ctx.fill();
+  // ear
+  ctx.beginPath(); ctx.ellipse(dogX+W*0.07, dogY-horizonY*0.1, W*0.02, horizonY*0.04, 0.3, 0, Math.PI*2); ctx.fill();
+}
+
+function updatePlayUI() {
+  const spd = Math.round(game.speed);
+  const numStr = String(spd).padStart(3, '0');
+  document.getElementById('speedNum').textContent = numStr;
+  document.getElementById('speedBar').style.width = (game.speed / game.maxSpeed * 100) + '%';
+
+  // minimap
+  const mm = document.getElementById('minimap');
+  const mctx = mm.getContext('2d');
+  mctx.clearRect(0, 0, 70, 70);
+  mctx.fillStyle = '#1a2a1a';
+  mctx.fillRect(0, 0, 70, 70);
+  // oval track
+  mctx.save();
+  mctx.translate(35, 38);
+  mctx.scale(1, 0.55);
+  mctx.beginPath(); mctx.arc(0, 0, 26, 0, Math.PI*2);
+  mctx.strokeStyle = '#555'; mctx.lineWidth = 6; mctx.stroke();
+  mctx.strokeStyle = '#888'; mctx.lineWidth = 2; mctx.stroke();
+  mctx.restore();
+  // player dot
+  mctx.fillStyle = '#ffe44d';
+  const mpx = 35 + game.playerX * 18;
+  mctx.beginPath(); mctx.arc(mpx, 52, 4, 0, Math.PI*2); mctx.fill();
+}
+
+// ===========================
+// INPUT HANDLERS
+// ===========================
+document.addEventListener('keydown', e => { game.keys[e.key] = true; });
+document.addEventListener('keyup',   e => { game.keys[e.key] = false; });
+
+function setupTouchBtn(id, flag) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', e => { e.preventDefault(); game[flag] = true; }, { passive: false });
+  el.addEventListener('touchend',   e => { e.preventDefault(); game[flag] = false; });
+  el.addEventListener('mousedown',  () => game[flag] = true);
+  el.addEventListener('mouseup',    () => game[flag] = false);
+}
+
+// ===========================
+// SCREEN TRANSITIONS
+// ===========================
+document.getElementById('startBtn').addEventListener('click', () => {
+  showScreen('charScreen');
+  initCharScreen();
+  updateCharStats();
+});
+document.getElementById('navCharBtn').addEventListener('click', () => {
+  showScreen('charScreen');
+  initCharScreen();
+  updateCharStats();
+});
+document.getElementById('backBtn').addEventListener('click', () => {
+  showScreen('startScreen');
+  initStartCanvas();
+});
+document.getElementById('decideBtn').addEventListener('click', () => {
+  showScreen('playScreen');
+  initPlay();
+  setupTouchBtn('touchLeft',  'touchLeft');
+  setupTouchBtn('touchRight', 'touchRight');
+  setupTouchBtn('touchAccel', 'touchAccel');
+  requestAnimationFrame(playLoop);
+});
+
+// ===========================
+// BOOT
+// ===========================
+window.addEventListener('load', () => {
+  initStartCanvas();
+});
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.screen.active');
+  if (active.id === 'startScreen') initStartCanvas();
+  if (active.id === 'playScreen') {
+    const canvas = document.getElementById('playCanvas');
+    const c = document.getElementById('gameContainer');
+    canvas.width = c.offsetWidth;
+    canvas.height = c.offsetHeight;
+  }
+});
+</script>
+</body>
+</html>
