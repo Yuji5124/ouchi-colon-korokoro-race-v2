@@ -31,6 +31,12 @@ canvas { display:block; }
   display:flex; flex-direction:column; align-items:center;
   gap:0; flex-shrink:0; padding:6px 0 0;
 }
+#titleLogoImg {
+  width:88%; max-width:330px; object-fit:contain;
+  filter:drop-shadow(2px 3px 5px rgba(0,0,0,.35));
+  display:none;
+}
+#titleFallback { display:flex; flex-direction:column; align-items:center; }
 .brand-badge {
   background:#fff; border-radius:20px; padding:3px 18px;
   font-size:13px; font-weight:bold; color:#555;
@@ -295,8 +301,11 @@ canvas { display:block; }
   <div id="startScreen" class="screen active">
     <div class="bunting" id="buntingStart"></div>
     <div class="game-title-wrap">
-      <div class="brand-badge">Ouchi Colon</div>
-      <div class="title-koro">ころころ<br>レース</div>
+      <img id="titleLogoImg" alt="Ouchi Colon ころころレース">
+      <div id="titleFallback">
+        <div class="brand-badge">Ouchi Colon</div>
+        <div class="title-koro">ころころ<br>レース</div>
+      </div>
     </div>
     <div class="start-stage">
       <canvas id="startCanvas"></canvas>
@@ -380,23 +389,45 @@ canvas { display:block; }
 // ============================================================
 const IMG = {};
 const IMG_PATHS = {
-  char_mikaro:   'assets/characters/mikaro.png',
-  char_pitokoro: 'assets/characters/pitokoro.png',
-  char_marine:   'assets/characters/marine.png',
-  char_fuwaro:   'assets/characters/fuwaro.png',
-  char_muro:     'assets/characters/muro.png',
-  char_kakubake: 'assets/characters/kakubake.png',
-  char_takoron:  'assets/characters/takoron.png',
-  char_zono:     'assets/characters/zono.png',
-  bg_start:      'assets/bg/start_bg.png',
-  bg_play:       'assets/bg/play_bg.png',
+  ui_title:         'assets/ui/title_logo.png',
+  bg_living:        'assets/backgrounds/living_room_bg.png',
+  char_mikaro:      'assets/characters/mikaro_front.png',
+  char_mikaro_back: 'assets/characters/mikaro_back.png',
+  char_pitokoro:    'assets/characters/pitokoro_front.png',
+  char_marine:      'assets/characters/marinkaba_front.png',
+  char_fuwaro:      'assets/characters/fuwaro_front.png',
+  char_muro:        'assets/characters/moolo_front.png',
+  char_kakubake:    'assets/characters/kakubake_front.png',
+  char_takoron:     'assets/characters/takoron_front.png',
+  char_zono:        'assets/characters/zono_front.png',
+  item_star:        'assets/items/star.png',
+  item_block:       'assets/items/block_blue.png',
 };
 function preloadImages() {
   Object.entries(IMG_PATHS).forEach(([key, path]) => {
     const img = new Image();
-    img.onload = () => { IMG[key] = img; };
+    img.onload = () => {
+      IMG[key] = img;
+      // タイトルロゴが読み込めたらHTMLのimg要素に反映してフォールバックを隠す
+      if (key === 'ui_title') {
+        const el = document.getElementById('titleLogoImg');
+        const fb = document.getElementById('titleFallback');
+        if (el) { el.src = path; el.style.display = 'block'; }
+        if (fb) fb.style.display = 'none';
+      }
+      // 背景・キャラ画像が読めたらアクティブ画面を再描画
+      if (key === 'bg_living') {
+        const s = document.querySelector('.screen.active');
+        if (s && s.id === 'startScreen') initStartCanvas();
+      }
+      if (key.startsWith('char_') && !key.endsWith('_back')) {
+        const s = document.querySelector('.screen.active');
+        if (s && s.id === 'charScreen') initCharScreen();
+        if (s && s.id === 'startScreen') initStartCanvas();
+      }
+    };
     img.src = path;
-    // onerror silently ignored — canvas fallback used
+    // onerror は無視 — Canvas フォールバックが使われる
   });
 }
 
@@ -694,14 +725,24 @@ function drawGenericChar(ctx, char, cx, cy, s) {
 
 // Back view (play screen player)
 function drawCharBack(ctx, char, cx, cy, s) {
-  const imgKey = 'char_' + char.id;
-  if (IMG[imgKey]) {
+  // MIKARO専用バック画像があれば優先使用
+  const backKey = 'char_' + char.id + '_back';
+  const frontKey = 'char_' + char.id;
+  const backImg = IMG[backKey] || null;
+  const frontImg = IMG[frontKey] || null;
+  if (backImg) {
     ctx.save();
-    // flip / tint for back view using same image
-    ctx.translate(cx, cy - s*.9);
-    ctx.scale(1, -1);
-    ctx.globalAlpha = 0.88;
-    ctx.drawImage(IMG[imgKey], -s*.5, -s*.1, s, s);
+    ctx.drawImage(backImg, cx - s*.5, cy - s*.9, s, s);
+    ctx.restore();
+    return;
+  }
+  // バック画像がなく正面画像がある場合は正面を薄く反転して代用
+  if (frontImg) {
+    ctx.save();
+    ctx.translate(cx, cy - s*.45);
+    ctx.scale(-1, 1);
+    ctx.globalAlpha = 0.75;
+    ctx.drawImage(frontImg, -s*.5, -s*.5, s, s);
     ctx.restore();
     return;
   }
@@ -768,6 +809,25 @@ function initStartCanvas() {
 }
 
 function drawStartScene(ctx, w, h) {
+  // 背景画像があれば全面に描画してキャラを上書き
+  if (IMG['bg_living']) {
+    ctx.drawImage(IMG['bg_living'], 0, 0, w, h);
+    // キャラだけ上に乗せて終了
+    const pw = r => w * r, ph = r => h * r;
+    const charLayout = [
+      { idx:3, x:.26, y:.38, s:.082 },
+      { idx:2, x:.74, y:.38, s:.082 },
+      { idx:1, x:.18, y:.50, s:.096 },
+      { idx:0, x:.50, y:.47, s:.16  },
+      { idx:5, x:.82, y:.50, s:.096 },
+      { idx:4, x:.22, y:.62, s:.082 },
+      { idx:6, x:.50, y:.62, s:.088 },
+      { idx:7, x:.78, y:.62, s:.082 },
+    ];
+    charLayout.forEach(p => drawChar(ctx, CHARS[p.idx], pw(p.x), ph(p.y), ph(p.s)));
+    return;
+  }
+  // --- Canvas フォールバック ---
   // sky/wall
   ctx.fillStyle = '#fce87a';
   ctx.fillRect(0, 0, w, h);
@@ -935,8 +995,9 @@ function initPlay() {
       color: ['#e74c3c','#3498db','#2ecc71','#f39c12'][Math.floor(Math.random()*4)]
     });
   }
+  // 敵キャラは moolo_front.png を使用 (charIdx 4 = muro/moolo)
   game.enemies = [
-    { charIdx:3, x:-.28, z:.42 },
+    { charIdx:4, x:-.28, z:.42 },
     { charIdx:4, x:.32,  z:.68 },
   ];
   game.speed=40; game.playerX=0; game.running=true; game.frame=0; game.roadOffset=0;
@@ -1073,6 +1134,21 @@ function drawPlayFrame() {
 }
 
 function drawPlayBackground(ctx, W, H, hy) {
+  // living_room_bg があればホライズン上半分にクロップして表示
+  if (IMG['bg_living']) {
+    const bg = IMG['bg_living'];
+    // 画像上部の約58%がリビング室内、残りが床 → 室内部分だけ horizon より上に収める
+    const roomFrac = 0.58;
+    ctx.drawImage(bg,
+      0, 0, bg.naturalWidth, bg.naturalHeight * roomFrac,
+      0, 0, W, hy
+    );
+    // horizon line
+    ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,hy); ctx.lineTo(W,hy); ctx.stroke();
+    return;
+  }
+  // --- Canvas フォールバック ---
   // wall
   const wg=ctx.createLinearGradient(0,0,0,hy);
   wg.addColorStop(0,'#ffe87a'); wg.addColorStop(1,'#ffd84a');
@@ -1190,6 +1266,12 @@ function drawPlayBackground(ctx, W, H, hy) {
 }
 
 function drawStar3D(ctx, x, y, r) {
+  if (IMG['item_star']) {
+    const sz = r * 2.6;
+    ctx.drawImage(IMG['item_star'], x - sz/2, y - sz/2, sz, sz);
+    return;
+  }
+  // Canvas フォールバック
   ctx.save(); ctx.translate(x, y);
   ctx.shadowColor='rgba(255,200,0,.5)'; ctx.shadowBlur=8;
   ctx.fillStyle='#ffe44d'; ctx.strokeStyle='#d4a000'; ctx.lineWidth=r*.12;
@@ -1204,14 +1286,16 @@ function drawStar3D(ctx, x, y, r) {
 }
 
 function drawBlock3D(ctx, x, y, w, h, color) {
+  if (IMG['item_block']) {
+    const sz = Math.max(w, h) * 1.4;
+    ctx.drawImage(IMG['item_block'], x - sz/2, y - sz/2, sz, sz);
+    return;
+  }
+  // Canvas フォールバック
   ctx.save(); ctx.translate(x, y-h/2);
-  // top face
   ctx.fillStyle=shiftBright(color,.3); ctx.fillRect(-w/2,-h*.18,w,h*.18);
-  // front face
   ctx.fillStyle=color; ctx.fillRect(-w/2,0,w,h);
-  // side shadow
   ctx.fillStyle='rgba(0,0,0,.2)'; ctx.fillRect(w/2-w*.12,0,w*.12,h);
-  // star
   ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(8,h*.45)}px sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('★',0,h*.5);

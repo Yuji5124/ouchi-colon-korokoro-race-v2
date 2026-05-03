@@ -65,29 +65,36 @@ GitHub Pages で公開できる **index.html 単体**で動作します。
 
 ## 開発者向け
 
-### 画像素材の差し替え
+### 画像素材パス一覧
 
-現在はすべて Canvas で図形描画しています（フォールバック）。  
-以下のパスに PNG ファイルを置くと自動的に優先表示されます。
+以下のパスに PNG を置くと自動的に優先表示されます。  
+ファイルが存在しない場合は Canvas 図形によるフォールバックが使われます。
 
 ```
 assets/
+  ui/
+    title_logo.png          ← タイトルロゴ（透過PNG）
+  backgrounds/
+    living_room_bg.png      ← リビング背景（スタート画面・プレイ画面共用）
   characters/
-    mikaro.png      ← MIKAROキャラ画像（透過PNG推奨、正面向き）
-    pitokoro.png
-    marine.png
-    fuwaro.png
-    muro.png
-    kakubake.png
-    takoron.png
-    zono.png
-  bg/
-    start_bg.png    ← スタート画面のキャラステージ背景
-    play_bg.png     ← プレイ画面の背景（地平線上の部屋）
+    mikaro_front.png        ← MIKARO 正面（選択画面・スタート画面）
+    mikaro_back.png         ← MIKARO 背面（プレイ画面プレイヤー）
+    pitokoro_front.png
+    marinkaba_front.png     ← マリンカバ
+    fuwaro_front.png
+    moolo_front.png         ← ムーロ / 敵キャラ Moolo
+    kakubake_front.png
+    takoron_front.png
+    zono_front.png
+  items/
+    star.png                ← 星アイテム（透過PNG）
+    block_blue.png          ← ブロック障害物（透過PNG）
 ```
 
-画像サイズの目安：キャラ画像は **128×128px** 以上の正方形（透過PNG）。  
-背景画像はゲーム画面幅 **390×400px** 程度。
+画像サイズの目安：  
+- キャラ画像: **256×256px** 以上の正方形（透過PNG推奨）  
+- 背景画像: **390×844px** 程度（縦長、スマホ画面比率）  
+- アイテム画像: **128×128px** 以上（透過PNG）
 
 ### ファイル構成
 
